@@ -1,0 +1,14 @@
+# ==============================================================================
+# CẤU HÌNH GIT IGNORE / GIT IGNORE CONFIGURATION
+# Hệ thống Tra cứu & Xử lý vi phạm giao thông (bt3)
+# ==============================================================================
+
+# Bỏ qua tệp cấu hình môi trường chứa thông tin nhạy cảm
+.env
+
+# Bỏ qua các tệp tạm của hệ thống và IDE
+.idea/
+.vscode/
+*.log
+Thumbs.db
+desktop.ini
