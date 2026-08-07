@@ -1,243 +1,222 @@
 # Hệ thống tra cứu và xử lý vi phạm giao thông
 
-Ứng dụng PHP thuần gồm cổng tra cứu vi phạm dành cho người dân và trang quản trị phương tiện, vi phạm, thông báo, nhật ký hoạt động. Dữ liệu được lưu trong PostgreSQL.
+Ứng dụng PHP thuần gồm cổng tra cứu dành cho người dân và trang quản trị phương tiện, vi phạm, thông báo, nhật ký hoạt động.
 
-## Yêu cầu
+Dự án được hướng dẫn chạy trên **GitHub Codespaces** và sử dụng database PostgreSQL đã tạo trên **Supabase**.
 
-- PHP 8.0 trở lên.
-- PostgreSQL 15 trở lên.
-- PHP extension `PDO` và `pdo_pgsql`.
-- Trình duyệt có kết nối Internet để tải Bootstrap và Bootstrap Icons từ CDN.
+## Chuẩn bị
+
+Cần có:
+
+- Tài khoản GitHub có quyền truy cập repository.
+- Một Supabase project đã có cấu trúc bảng và dữ liệu của dự án.
+- Database password của Supabase project.
+
+Nếu dữ liệu đã tồn tại trên Supabase thì không cần cài PostgreSQL Server trong Codespaces, không cần tạo database và không import lại `database.sql`.
+
+## 1. Tạo GitHub Codespace
+
+1. Mở repository <https://github.com/bch7504/bt3>.
+2. Chọn `Code` → `Codespaces`.
+3. Chọn `Create codespace on main`.
+4. Chờ Codespaces mở trình soạn thảo.
+
+Mã nguồn đã được GitHub clone tự động nên không chạy `git clone` thêm lần nữa.
+
+## 2. Cài PHP trong Codespaces
+
+Mở Terminal và chạy:
+
+```bash
+sudo apt update
+sudo apt install -y php-cli php-pgsql postgresql-client
+```
 
 Kiểm tra môi trường:
 
-```powershell
+```bash
 php -v
-php -m | Select-String -Pattern "PDO|pdo_pgsql"
+php -m | grep -E 'PDO|pdo_pgsql'
 psql --version
 ```
 
-Nếu chưa thấy `pdo_pgsql`, hãy bật dòng `extension=pdo_pgsql` trong `php.ini`, sau đó khởi động lại PHP/Apache.
+Kết quả PHP phải có cả `PDO` và `pdo_pgsql`.
 
-## Cài đặt và chạy nhanh
+> Chỉ cài `postgresql-client` để kiểm tra kết nối Supabase. Không cần cài hoặc khởi động PostgreSQL Server trong Codespaces.
 
-### 1. Tạo cơ sở dữ liệu
+## 3. Lấy thông tin kết nối Supabase
 
-Khởi động PostgreSQL, sau đó tạo database `bt3`:
+Trong Supabase Dashboard:
 
-```powershell
-createdb -U postgres bt3
-```
+1. Mở project đang chứa dữ liệu.
+2. Nhấn `Connect`.
+3. Chọn `Session pooler`.
+4. Sao chép Host, Port, Database và User.
+5. Sử dụng database password đã đặt khi tạo project.
 
-Bạn cũng có thể tạo database bằng pgAdmin hoặc DBeaver nếu không sử dụng được lệnh `createdb`.
-
-### 2. Cấu hình môi trường
-
-Tại thư mục gốc của dự án, tạo `.env` từ file mẫu:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Trên Command Prompt hoặc Linux/macOS, dùng lệnh tương ứng:
-
-```bash
-copy .env.example .env
-# hoặc: cp .env.example .env
-```
-
-Cập nhật `.env` theo tài khoản PostgreSQL trên máy:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=bt3
-DB_USER=postgres
-DB_PASS=mat_khau_postgresql
-```
-
-File `.env` chứa thông tin nhạy cảm và đã được loại khỏi Git qua `.gitignore`.
-
-### 3. Import dữ liệu mẫu
-
-Chạy từ thư mục gốc của dự án:
-
-```powershell
-psql -U postgres -d bt3 -f database.sql
-```
-
-Khi được hỏi, nhập mật khẩu PostgreSQL đã cấu hình ở `DB_PASS`. Ngoài ra, có thể mở [database.sql](database.sql) bằng Query Tool của pgAdmin/DBeaver và thực thi toàn bộ file trên database `bt3`.
-
-> File SQL tạo bảng và nạp một lượng lớn dữ liệu mẫu, vì vậy quá trình import có thể mất một lúc.
-
-### 4. Khởi động ứng dụng
-
-Chạy PHP development server từ đúng thư mục gốc của dự án:
-
-```powershell
-php -S localhost:8000
-```
-
-Mở trình duyệt tại:
-
-- Cổng tra cứu: <http://localhost:8000/FE/customer/>
-- Trang quản trị: <http://localhost:8000/FE/admin/>
-
-Tài khoản quản trị mẫu được tạo bởi `database.sql`:
+Thông tin Session pooler thường có dạng:
 
 ```text
-Tên đăng nhập: admin
-Mật khẩu:      123456
+Host:     aws-0-<region>.pooler.supabase.com
+Port:     5432
+Database: postgres
+User:     postgres.<project-ref>
+Password: database password của project
 ```
 
-Chỉ sử dụng tài khoản này cho môi trường học tập/phát triển. Ứng dụng còn có cơ chế đăng nhập dự phòng bằng chính `DB_USER` và `DB_PASS`; không nên triển khai cơ chế này trên môi trường công khai.
+Lưu ý:
 
-Để dừng development server, nhấn `Ctrl+C` trong cửa sổ terminal đang chạy.
+- Phải sao chép giá trị thật từ Supabase, không dùng nguyên giá trị ví dụ.
+- Database password không phải `anon key` hoặc `service_role key`.
+- Dùng **Session pooler cổng `5432`**.
+- Không dùng Transaction pooler cổng `6543` vì dự án sử dụng prepared statements.
 
-## Chạy trên máy phòng lab không dùng Docker
+Tham khảo: [Supabase – Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
-Phần này dành cho máy Windows ở phòng lab. Trước tiên, máy cần có Git, PHP và PostgreSQL. Bạn không cần Composer hoặc Node.js vì dự án không sử dụng các công cụ này.
+## 4. Tạo file `.env`
 
-### A. Kiểm tra phần mềm trên máy
+Tại thư mục gốc dự án trong Codespaces, chạy:
 
-Mở PowerShell và chạy từng lệnh:
-
-```powershell
-git --version
-php -v
-psql --version
-php -m | Select-String -Pattern "PDO|pdo_pgsql"
+```bash
+cp .env.example .env
 ```
 
-Kết quả cần có:
-
-- `git`, `php` và `psql` đều hiển thị phiên bản.
-- Danh sách PHP extension có `PDO` và `pdo_pgsql`.
-
-Nếu PHP đã có trong XAMPP nhưng lệnh `php` không tồn tại, có thể gọi bằng đường dẫn đầy đủ, ví dụ:
-
-```powershell
-C:\xampp\php\php.exe -v
-C:\xampp\php\php.exe -S localhost:8000
-```
-
-Nếu PostgreSQL đã được cài nhưng lệnh `psql` không tồn tại, tìm thư mục `bin` của PostgreSQL và gọi bằng đường dẫn đầy đủ, ví dụ:
-
-```powershell
-& "C:\Program Files\PostgreSQL\15\bin\psql.exe" --version
-```
-
-Số phiên bản trong đường dẫn có thể là `15`, `16`, `17` hoặc phiên bản đang được cài trên máy.
-
-Nếu thiếu phần mềm hoặc không có quyền cài đặt/chỉnh sửa `php.ini`, hãy nhờ giáo viên hoặc quản trị viên phòng lab cài PHP, PostgreSQL và bật `pdo_pgsql`. Chỉ tải bản portable khi nội quy phòng máy cho phép; dữ liệu PostgreSQL portable có thể bị xóa khi đăng xuất hoặc khởi động lại máy.
-
-### B. Lần đầu lấy dự án về máy
-
-Di chuyển tới thư mục được phép lưu bài, sau đó clone repository:
-
-```powershell
-cd D:\DuAn
-git clone <URL_REPOSITORY> bt3
-cd bt3
-```
-
-Thay `<URL_REPOSITORY>` bằng địa chỉ Git thật của dự án. Nếu repository riêng tư, đăng nhập bằng tài khoản Git hoặc Personal Access Token theo quy định của trường.
-
-> Không dùng `git pull` khi máy chưa có thư mục dự án. Lần đầu phải dùng `git clone`; `git pull` chỉ dùng để cập nhật một bản clone đã tồn tại.
-
-### C. Tạo file cấu hình riêng cho máy lab
-
-File `.env` không được lưu trên Git, vì vậy mỗi máy mới cần tạo lại:
-
-```powershell
-Copy-Item .env.example .env
-notepad .env
-```
-
-Điền thông tin PostgreSQL trên máy lab:
+Mở file `.env` trong Explorer và thay các giá trị mẫu bằng thông tin lấy từ Supabase:
 
 ```env
-DB_HOST=localhost
+DB_HOST=aws-0-your-region.pooler.supabase.com
 DB_PORT=5432
-DB_NAME=bt3
-DB_USER=postgres
-DB_PASS=mat_khau_postgresql
+DB_NAME=postgres
+DB_USER=postgres.your_project_ref
+DB_PASS=your_supabase_database_password
+PGSSLMODE=require
 ```
 
-Lưu file rồi đóng Notepad. Không commit hoặc gửi file `.env` lên repository.
+Ví dụ, nếu Supabase cung cấp username `postgres.abcdefghijklmnop`, phải ghi đầy đủ:
 
-### D. Tạo và import database lần đầu
-
-Đảm bảo dịch vụ PostgreSQL đang chạy. Sau đó, tại thư mục `bt3`, chạy:
-
-```powershell
-createdb -U postgres bt3
-psql -U postgres -d bt3 -f database.sql
+```env
+DB_USER=postgres.abcdefghijklmnop
 ```
 
-Nhập mật khẩu của user `postgres` khi được hỏi. Nếu máy không nhận lệnh `createdb` và `psql`, dùng đường dẫn đầy đủ:
+File `.env` chứa mật khẩu thật và đã được `.gitignore` loại trừ. Không commit hoặc gửi file này lên GitHub.
 
-```powershell
-& "C:\Program Files\PostgreSQL\15\bin\createdb.exe" -U postgres bt3
-& "C:\Program Files\PostgreSQL\15\bin\psql.exe" -U postgres -d bt3 -f database.sql
+## 5. Kiểm tra database Supabase
+
+Có thể kiểm tra kết nối bằng `psql`. Thay Host và User bằng giá trị thật:
+
+```bash
+psql "host=HOST_SUPABASE port=5432 dbname=postgres user=postgres.PROJECT_REF sslmode=require" -W
 ```
 
-Có thể thay hai lệnh trên bằng pgAdmin:
+Nhập database password khi được hỏi. Sau khi kết nối thành công, chạy:
 
-1. Mở pgAdmin và kết nối tới PostgreSQL trên máy.
-2. Nhấp phải `Databases`, chọn `Create` → `Database`.
-3. Đặt tên database là `bt3`.
-4. Chọn database `bt3`, mở `Query Tool`.
-5. Mở file `database.sql`, sau đó chạy toàn bộ nội dung.
-
-Chỉ import `database.sql` khi tạo database lần đầu. Không import lại sau mỗi lần `git pull`, vì file hiện tại có các lệnh tạo bảng và có thể báo lỗi nếu bảng đã tồn tại.
-
-### E. Chạy website
-
-Từ đúng thư mục gốc `bt3`, chạy:
-
-```powershell
-php -S localhost:8000
+```sql
+\dt
+SELECT COUNT(*) FROM vehicles;
+\q
 ```
 
-Nếu sử dụng PHP của XAMPP:
+Dự án cần các bảng chính:
 
-```powershell
-C:\xampp\php\php.exe -S localhost:8000
+```text
+vehicles
+violations
+admins
+notifications
+audit_logs
 ```
 
-Giữ nguyên cửa sổ PowerShell này trong lúc sử dụng website, rồi mở:
+Nếu các bảng đã có dữ liệu thì không chạy `database.sql`.
 
-- Cổng tra cứu: <http://localhost:8000/FE/customer/>
-- Trang quản trị: <http://localhost:8000/FE/admin/>
-- Tài khoản quản trị mẫu: `admin` / `123456`
+Tài khoản `admin` / `123456` chỉ hoạt động nếu bảng `admins` trên Supabase đã chứa bản ghi quản trị mẫu tương ứng.
 
-Khi hoàn thành, nhấn `Ctrl+C` để dừng PHP server. Nếu máy lab dùng chung, nên đăng xuất khỏi tài khoản Git và xóa thông tin đăng nhập đã lưu theo nội quy của phòng máy.
+## 6. Chạy dự án
 
-### F. Các buổi học tiếp theo
+Tại thư mục gốc chứa `BE`, `FE` và `.env`, chạy:
 
-Nếu thư mục dự án và database vẫn còn trên máy, không cần clone hoặc import lại. Chạy:
-
-```powershell
-cd D:\DuAn\bt3
-git status
-git pull
-php -S localhost:8000
+```bash
+php -S 0.0.0.0:8000 -t .
 ```
 
-Trước khi `git pull`, dùng `git status` để kiểm tra file đang sửa. Hãy commit hoặc sao lưu thay đổi của bạn trước; không dùng lệnh xóa/reset nếu chưa chắc chắn.
+Phải dùng `0.0.0.0` để GitHub Codespaces có thể forward cổng. Giữ Terminal này mở trong lúc sử dụng website.
 
-File `.env` vẫn được giữ nguyên sau `git pull` vì đã nằm trong `.gitignore`. Nếu nhóm cập nhật `.env.example` với biến mới, hãy tự bổ sung biến đó vào `.env` hiện có.
+## 7. Mở website
 
-Nếu phòng lab xóa dữ liệu sau mỗi buổi, cần thực hiện lại các bước B–E hoặc lưu repository trong vùng lưu trữ cá nhân được nhà trường cho phép.
+1. Mở tab `PORTS` ở khu vực Terminal của Codespaces.
+2. Tìm cổng `8000`.
+3. Nhấn biểu tượng quả địa cầu hoặc chọn `Open in Browser`.
 
-## Chạy bằng XAMPP, Laragon hoặc Apache
+GitHub sẽ cấp một URL có dạng:
 
-1. Đặt toàn bộ thư mục dự án vào web root, ví dụ `C:\xampp\htdocs\bt3` hoặc `C:\laragon\www\bt3`.
-2. Bật extension `pdo_pgsql` trong phiên bản PHP mà Apache đang dùng.
-3. Cấu hình `.env` và import `database.sql` như hướng dẫn ở trên.
-4. Khởi động Apache và PostgreSQL.
-5. Truy cập `http://localhost/bt3/FE/customer/` hoặc `http://localhost/bt3/FE/admin/`.
+```text
+https://<ten-codespace>-8000.app.github.dev
+```
+
+Truy cập:
+
+```text
+https://<ten-codespace>-8000.app.github.dev/FE/customer/
+https://<ten-codespace>-8000.app.github.dev/FE/admin/
+```
+
+Không mở `localhost:8000` trực tiếp trên trình duyệt máy cá nhân. Nên giữ cổng `8000` ở chế độ private vì dự án có tài khoản quản trị mẫu.
+
+Có thể thử tra cứu biển số `30A-123.45` nếu dữ liệu này tồn tại trên Supabase.
+
+Để dừng PHP server, quay lại Terminal và nhấn `Ctrl+C`.
+
+## Những lần mở Codespace sau
+
+Khi mở lại cùng một Codespace, file `.env` và các package thường vẫn còn. Chỉ cần chạy:
+
+```bash
+php -S 0.0.0.0:8000 -t .
+```
+
+Nếu đã xóa Codespace và tạo Codespace mới, thực hiện lại các bước cài PHP và tạo `.env`. Dữ liệu trên Supabase không bị mất vì được lưu bên ngoài Codespace.
+
+## Lỗi thường gặp
+
+### `could not find driver`
+
+PHP chưa có extension PostgreSQL:
+
+```bash
+sudo apt install -y php-pgsql
+php -m | grep -E 'PDO|pdo_pgsql'
+```
+
+Sau đó dừng và chạy lại PHP server.
+
+### `password authentication failed`
+
+Kiểm tra lại:
+
+- `DB_PASS` phải là database password.
+- `DB_USER` của Session pooler thường có dạng `postgres.<project-ref>`.
+- Không dùng `anon key` hoặc `service_role key` làm mật khẩu.
+
+### `could not translate host name`
+
+Sao chép lại đúng Host tại `Supabase Dashboard` → `Connect` → `Session pooler`.
+
+### `connection refused` hoặc timeout
+
+Kiểm tra project Supabase có đang hoạt động và có cấu hình Network Restrictions chặn kết nối hay không.
+
+### Website báo bảng không tồn tại
+
+Kiểm tra `.env` đang trỏ tới đúng Supabase project và các bảng nằm trong schema `public`.
+
+### Không thấy cổng `8000`
+
+Đảm bảo Terminal vẫn đang chạy:
+
+```bash
+php -S 0.0.0.0:8000 -t .
+```
+
+Sau đó vào tab `PORTS`, chọn `Add Port` và nhập `8000`.
 
 ## Cấu trúc chính
 
@@ -245,7 +224,7 @@ Nếu phòng lab xóa dữ liệu sau mỗi buổi, cần thực hiện lại c�
 bt3/
 ├── BE/                  # API PHP và xử lý backend
 │   ├── auth/            # Đăng nhập, đăng xuất, session
-│   ├── config/          # Kết nối PostgreSQL
+│   ├── config/          # Kết nối PostgreSQL/Supabase
 │   ├── customer/        # API tra cứu công khai
 │   ├── vehicles/        # API quản lý phương tiện
 │   ├── violations/      # API quản lý vi phạm
@@ -254,17 +233,8 @@ bt3/
 ├── FE/
 │   ├── customer/        # Giao diện tra cứu
 │   └── admin/           # Giao diện quản trị
-├── .env.example         # Mẫu cấu hình môi trường
-└── database.sql         # Cấu trúc và dữ liệu mẫu PostgreSQL
+├── .env.example         # Mẫu cấu hình Supabase
+└── database.sql         # Cấu trúc và dữ liệu mẫu, không chạy lại nếu Supabase đã có dữ liệu
 ```
 
-## Lỗi thường gặp
-
-- `could not find driver`: extension `pdo_pgsql` chưa được bật hoặc PHP đang đọc nhầm file `php.ini`. Dùng `php --ini` để kiểm tra.
-- `connection refused`: PostgreSQL chưa chạy hoặc `DB_HOST`/`DB_PORT` trong `.env` chưa đúng.
-- `password authentication failed`: kiểm tra lại `DB_USER` và `DB_PASS`.
-- `database "bt3" does not exist`: tạo database và import `database.sql` trước khi chạy ứng dụng.
-- API trả về `401`: phiên quản trị đã hết hạn; đăng nhập lại tại trang admin.
-- Giao diện thiếu định dạng hoặc icon: kiểm tra kết nối Internet vì Bootstrap được tải từ CDN.
-
-> PHP built-in server chỉ phù hợp để phát triển và chạy thử, không nên dùng làm máy chủ production.
+> PHP built-in server chỉ phù hợp để học tập, phát triển và chạy thử; không dùng trực tiếp làm máy chủ production.
