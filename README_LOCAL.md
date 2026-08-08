@@ -23,9 +23,10 @@ Tài liệu này hướng dẫn chi tiết cách cài đặt Git, tải mã ngu�
 - Tải XAMPP phiên bản mới nhất (có PHP >= 8.0) tại [Trang chủ XAMPP](https://www.apachefriends.org/index.html).
 - Tiến hành cài đặt mặc định vào thư mục `C:\xampp`.
 
-#### 3. Cài đặt PostgreSQL Server
+#### 3. Cài đặt PostgreSQL Server (Cài riêng không kèm pgAdmin 4)
 - Tải bộ cài đặt PostgreSQL cho Windows tại [PostgreSQL Downloads](https://www.postgresql.org/download/windows/) (khuyên dùng bản 15 hoặc 16).
-- Trong lúc cài đặt, hãy ghi nhớ mật khẩu tài khoản quản trị `postgres` (ví dụ: `123456`).
+- **Mẹo cài riêng (Không cài pgAdmin 4 để nhẹ máy):** Khi trình cài đặt hiện bảng chọn các thành phần cài đặt (Select Components), bạn hãy **bỏ tích chọn ở dòng `pgAdmin 4` và `Stack Builder`**. Chỉ giữ lại tích chọn ở dòng `PostgreSQL Server` và `Command Line Tools` (chứa lệnh `psql` cần dùng).
+- Trong lúc cài đặt, hãy thiết lập và ghi nhớ mật khẩu tài khoản quản trị `postgres` (ví dụ: `123456`).
 - Cổng kết nối (Port) mặc định là `5432`.
 
 ---
@@ -66,15 +67,23 @@ Sau khi chạy xong, toàn bộ mã nguồn sẽ nằm tại đường dẫn: `C
 ---
 
 ### Bước 4: Tạo Cơ sở dữ liệu và nạp dữ liệu mẫu
-1. Mở ứng dụng **pgAdmin 4** (cài kèm theo PostgreSQL) hoặc một phần mềm quản lý database khác (như DBeaver, TablePlus).
-2. Nhập mật khẩu bạn đã đặt ở Bước 1 để kết nối tới server PostgreSQL cục bộ.
-3. Nhấp chuột phải vào **Databases** -> Chọn **Create** -> **Database...**
-4. Nhập tên database là `bt3` rồi bấm **Save**.
-5. Mở Command Prompt (cmd) trên Windows và chạy lệnh sau để nạp dữ liệu từ file `database.sql`:
+
+Nếu không cài pgAdmin 4, bạn có thể dễ dàng tạo database và nạp dữ liệu hoàn toàn bằng dòng lệnh (Command Prompt/PowerShell) như sau:
+
+1. **Tạo Database tên là `bt3`:**
+   Mở Command Prompt (cmd) và chạy lệnh dưới đây (nhập mật khẩu của user `postgres` khi được hỏi):
+   ```cmd
+   "C:\Program Files\PostgreSQL\<VERSION>\bin\psql.exe" -U postgres -c "CREATE DATABASE bt3;"
+   ```
+   *(Thay `<VERSION>` bằng số phiên bản bạn cài đặt, ví dụ `15` hoặc `16`)*
+
+2. **Nạp dữ liệu mẫu từ `database.sql`:**
+   Tiếp tục chạy lệnh sau để import cấu trúc bảng và dữ liệu mẫu vào database `bt3`:
    ```cmd
    "C:\Program Files\PostgreSQL\<VERSION>\bin\psql.exe" -U postgres -d bt3 -f C:\xampp\htdocs\bt3\database.sql
    ```
-   *(Thay `<VERSION>` bằng phiên bản PostgreSQL bạn đã cài đặt, ví dụ `15` hoặc `16`)*
+
+*(Nếu bạn vẫn muốn dùng giao diện trực quan, bạn có thể tải các phần mềm nhẹ hơn pgAdmin 4 như **TablePlus** hoặc **DBeaver** để quản lý database PostgreSQL)*
 
 ---
 
